@@ -1946,11 +1946,11 @@ const MENU = [
     capa: "assets/images/combos/combo-1.webp", // foto do card na página inicial
     descricao: "Combos fechados com o melhor preço",
     itens: [
-      { nome: "Combo 1", desc: "1x X-Tudo + 1 Guaraná lata + 1 batata frita PP + 1 açaí PP", preco: 26.00, icon: "burger", tag: "⭐ Completo", foto: "assets/images/combos/combo-1.webp" },
-      { nome: "Combo 2", desc: "1x X-Tudo + 1 batata frita + 1 Guaraná lata", preco: 23.00, icon: "burger", tag: "🔥 Combo", foto: "assets/images/combos/combo-2.webp" },
-      { nome: "Combo 3", desc: "1x X-Tudo + 1 Guaraná lata", preco: 21.00, icon: "burger", tag: "⚡ Rápido", foto: "assets/images/combos/combo-3.webp" },
-      { nome: "Combo 4", desc: "1x X-Tudo + 1 batata frita (70g)", preco: 21.00, icon: "burger", tag: "🍟 Com batata", foto: "assets/images/combos/combo-4.webp" },
-      { nome: "Combo 5", desc: "1x X-Tudo + 1 açaí PP", preco: 21.00, icon: "burger", tag: "🍇 Com açaí", foto: "assets/images/combos/combo-5.webp" }
+      { nome: "Combo 1", desc: "1x X-Tudo + 1 Guaraná lata + 1 batata frita PP + 1 açaí PP", preco: 26.00, icon: "burger", tag: "Completo", foto: "assets/images/combos/combo-1.webp" },
+      { nome: "Combo 2", desc: "1x X-Tudo + 1 batata frita + 1 Guaraná lata", preco: 23.00, icon: "burger", tag: "Combo", foto: "assets/images/combos/combo-2.webp" },
+      { nome: "Combo 3", desc: "1x X-Tudo + 1 Guaraná lata", preco: 21.00, icon: "burger", tag: "Rápido", foto: "assets/images/combos/combo-3.webp" },
+      { nome: "Combo 4", desc: "1x X-Tudo + 1 batata frita (70g)", preco: 21.00, icon: "burger", tag: "Com batata", foto: "assets/images/combos/combo-4.webp" },
+      { nome: "Combo 5", desc: "1x X-Tudo + 1 açaí PP", preco: 21.00, icon: "burger", tag: "Com açaí", foto: "assets/images/combos/combo-5.webp" }
     ]
   },
   {
@@ -1977,7 +1977,7 @@ const MENU = [
       { nome: "X-Bred", desc: "Queijo, presunto, carne, ovo, calabresa, salsicha, salada e milho", preco: 15.00, icon: "burger", foto: "assets/images/sanduiches/x-calabregg.webp" },
       { nome: "X-Bagunça", desc: "Queijo, presunto, carne, calabresa, bacon, salsicha, salada e milho", preco: 15.00, icon: "burger", foto: "assets/images/sanduiches/x-frango-bagunca.webp" },
       { nome: "X-Tudo", desc: "Queijo, presunto, carne, calabresa, bacon, salsicha, ovo, salada e milho", preco: 16.00, icon: "burger", foto: "assets/images/sanduiches/x-tudo.webp" },
-      { nome: "Moda da Casa", desc: "Queijo, presunto, 2 carnes, 2 salsichas, 2 ovos, frango, calabresa, bacon, salada e milho", preco: 24.00, icon: "burger", tag: "🏠 Da casa", foto: "assets/images/sanduiches/x-frango-bacon.webp" }
+      { nome: "Moda da Casa", desc: "Queijo, presunto, 2 carnes, 2 salsichas, 2 ovos, frango, calabresa, bacon, salada e milho", preco: 24.00, icon: "burger", tag: "Da casa", foto: "assets/images/sanduiches/x-frango-bacon.webp" }
     ]
   },
   {
@@ -2209,7 +2209,7 @@ function renderItemCard(cat, item){
     ? `<img src="${item.foto}" alt="${item.nome}" loading="lazy" decoding="async">`
     : (ICONS[item.icon] || ICONS.burger);
   const isCombo = cat === "Combos";
-  const badge = isCombo ? `<div class="combo-badge">${item.tag || "🔥 Combo"}</div>` : "";
+  const badge = isCombo ? `<div class="combo-badge">${item.tag || "Combo"}</div>` : "";
   // Quando o produto (cadastrado pelo painel) tem preço promocional, mostra
   // o preço de tabela riscado do lado do preço promocional em destaque.
   const temPromo = item.precoOriginal != null && item.precoOriginal > item.preco;
@@ -2259,7 +2259,7 @@ function renderMenuAndNav(){
   nav.innerHTML = MENU.map((cat,i) => {
     const isCombo = cat.categoria === "Combos";
     const cls = `cat-btn${i===categoriaAtivaIdx?' active':''}${isCombo?' cat-btn-combo':''}`;
-    const label = isCombo ? `🔥 ${cat.categoria}` : cat.categoria;
+    const label = isCombo ? cat.categoria : cat.categoria;
     return `<button class="${cls}" data-idx="${i}" onclick="abrirCategoria(${i})">${label}</button>`;
   }).join("");
 
@@ -2331,7 +2331,7 @@ function renderVitrineCard(cat, i){
     ? `<img src="${foto}" alt="" loading="lazy" decoding="async">`
     : `<div class="vitrine-icon-fallback">${ICONS[iconeDaCategoria(cat)] || ICONS.burger}</div>`;
   const min = precoMinimoCategoria(cat);
-  const tag = cat.categoria === "Combos" ? `<span class="hc-tag">🔥 Promo</span>` : "";
+  const tag = cat.categoria === "Combos" ? `<span class="hc-tag">Promo</span>` : "";
   return `
     <button type="button" class="hc-card" onclick="abrirCategoria(${i})" aria-label="Ver ${escapeHtml(cat.categoria)}">
       <span class="hc-info">
@@ -4889,7 +4889,7 @@ function montarItemFirestore(p){
     // Só preenchido quando tem promoção ativa — é o que faz o cardápio
     // mostrar o preço "de tabela" riscado do lado do preço promocional.
     precoOriginal: temPromo ? (Number(p.preco) || 0) : undefined,
-    tag: p.destaque ? "⭐ Destaque" : undefined,
+    tag: p.destaque ? "Destaque" : undefined,
     foto: p.imagemUrl || undefined,
     // Adicionais por produto cadastrado no painel (opcional): lista de ids de
     // GRUPOS_ADICIONAIS ou grupos completos. Sem isso, vale o da categoria.
