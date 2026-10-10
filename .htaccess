@@ -1,0 +1,58 @@
+# =====================================================================
+#  Face Burguer JR — configuração para hospedagem Apache/LiteSpeed (Hostinger)
+#  Fica na mesma pasta do index.html (ex.: public_html/).
+#  Em hospedagens sem Apache (ex.: Vercel) este arquivo é simplesmente ignorado.
+# =====================================================================
+
+Options -Indexes
+DirectoryIndex index.html
+
+# ---------- Força HTTPS (Firebase Auth e geolocalização exigem contexto seguro) ----------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} off
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# ---------- Tipos de arquivo ----------
+<IfModule mod_mime.c>
+  AddType image/webp .webp
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
+# ---------- Compressão ----------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain application/javascript application/json image/svg+xml
+</IfModule>
+
+# ---------- Cache ----------
+# HTML: sempre revalida (cardápio/preços/horários atualizados aparecem na hora).
+# Imagens: 7 dias. Ao TROCAR uma foto, salve com um nome novo (ex.: x-tudo-v2.webp)
+# e atualize a referência no index.html — assim ninguém fica vendo a foto antiga.
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType image/webp "access plus 7 days"
+  ExpiresByType image/png  "access plus 7 days"
+  ExpiresByType image/jpeg "access plus 7 days"
+</IfModule>
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  <Files "painel.html">
+    Header set X-Robots-Tag "noindex, nofollow"
+  </Files>
+</IfModule>
+
+# ---------- Não servir arquivos do repositório que não são do site ----------
+<FilesMatch "^(README\.md|\.gitignore|\.gitattributes)$">
+  Require all denied
+</FilesMatch>
+<IfModule mod_rewrite.c>
+  RewriteRule ^(docs|\.git)(/|$) - [F,L]
+</IfModule>

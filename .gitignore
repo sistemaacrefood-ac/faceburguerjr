@@ -1,0 +1,50 @@
+# ---------- Segredos / credenciais (NUNCA versionar) ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+serviceAccount*.json
+service-account*.json
+*-firebase-adminsdk-*.json
+firebase-adminsdk*.json
+credentials*.json
+client_secret*.json
+secrets/
+private/
+
+# ---------- Firebase CLI (se um dia for usado) ----------
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# ---------- Logs / temporários / caches ----------
+*.log
+npm-debug.log*
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+.cache/
+tmp/
+temp/
+
+# ---------- Dependências e builds (o site não usa, mas por garantia) ----------
+node_modules/
+dist/
+build/
+
+# ---------- Sistema operacional / editores ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.code-workspace
+
+# ---------- Pacotes gerados pra upload manual ----------
+*.zip
