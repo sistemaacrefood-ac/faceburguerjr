@@ -1154,8 +1154,8 @@ const FIREBASE_CONFIG = firebaseConfig;
 
 /* ======================================================
    LOGIN DO DONO — Firebase Authentication (e-mail + senha)
-   • Cadastro: e-mail + senha + confirmar senha → o Firebase manda um LINK
-     de confirmação pro e-mail → o dono clica → volta aqui → "Já confirmei".
+   • Cadastro: e-mail + senha + confirmar senha → entra direto, sem link
+     de confirmação por e-mail.
    • Login normal: e-mail + senha → entra direto (não pede link de novo).
    • Esqueci minha senha: link de redefinição do próprio Firebase.
    Quem pode entrar no painel NÃO fica escrito aqui: é decidido pelas Regras
@@ -1292,7 +1292,7 @@ function criarContaDono(){
   lockErro("Criando conta…", true);
   firebase.auth().setPersistence(persistenciaEscolhida())
     .then(() => firebase.auth().createUserWithEmailAndPassword(email, senha))
-    .then(cred => enviarLinkConfirmacao(cred.user).then(() => mostrarVerificacao(cred.user, true)))
+    // Sem link de confirmação: o onAuthStateChanged já libera o painel.
     .catch(err => { console.error(err); lockErro(mensagemErroAuth(err)); });
 }
 
@@ -1428,7 +1428,7 @@ async function garantirAcessoAdmin(user){
 async function liberarPainel(user){
   lockErro("Conferindo acesso…", true);
   try{
-    await user.getIdToken(true); // token novo, já com "e-mail confirmado"
+    await user.getIdToken(true);
     if(await garantirAcessoAdmin(user)){ mostrarApp(); return; }
     avisoLoginPendente = "Esta conta não tem acesso ao painel. Peça ao dono do estabelecimento para liberar o seu e-mail em 👥 Acessos.";
     await firebase.auth().signOut();
@@ -1482,7 +1482,6 @@ if(firebaseAppPronto){
   firebase.auth().onAuthStateChanged(user => {
     // Visitante anônimo do cardápio (mesmo site/navegador) não entra no painel.
     if(!user || user.isAnonymous){ mostrarLogin(); return; }
-    if(!user.emailVerified){ mostrarVerificacao(user, false); return; }
     if(appIniciado) return;
     liberarPainel(user);
   });
