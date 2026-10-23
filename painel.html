@@ -1201,6 +1201,7 @@ if(!firebaseAppPronto){
 /* ---------- Mensagens e modos da tela de login ---------- */
 let modoLock = "login";            // login | cadastro | verificar
 let avisoLoginPendente = "";       // mensagem pra mostrar depois de um signOut
+let cadastrandoAgora = false;      // true entre "Criar conta" e o onAuthStateChanged (manda o link)
 let ultimoEnvioLink = 0;           // quando o último link de confirmação foi enviado
 let timerReenvio = null;
 const ESPERA_REENVIO_MS = 60 * 1000;
@@ -1290,10 +1291,11 @@ function criarContaDono(){
   if(senha.length < 8){ lockErro("A senha precisa ter pelo menos 8 caracteres."); return; }
   if(senha !== senha2){ lockErro("As senhas não conferem."); return; }
   lockErro("Criando conta…", true);
+  cadastrandoAgora = true;
   firebase.auth().setPersistence(persistenciaEscolhida())
     .then(() => firebase.auth().createUserWithEmailAndPassword(email, senha))
-    // Sem link de confirmação: o onAuthStateChanged já libera o painel.
-    .catch(err => { console.error(err); lockErro(mensagemErroAuth(err)); });
+    // O onAuthStateChanged manda o link de confirmação e mostra a tela "Já confirmei".
+    .catch(err => { cadastrandoAgora = false; console.error(err); lockErro(mensagemErroAuth(err)); });
 }
 
 /* Manda o link de confirmação do próprio Firebase. Quando o painel está
@@ -1483,6 +1485,18 @@ if(firebaseAppPronto){
     // Visitante anônimo do cardápio (mesmo site/navegador) não entra no painel.
     if(!user || user.isAnonymous){ mostrarLogin(); return; }
     if(appIniciado) return;
+    // As Regras do Firestore só liberam o painel para e-mail confirmado.
+    if(!user.emailVerified){
+      if(cadastrandoAgora){
+        cadastrandoAgora = false;
+        enviarLinkConfirmacao(user)
+          .then(() => mostrarVerificacao(user, true))
+          .catch(err => { console.error(err); mostrarVerificacao(user, false); });
+      } else {
+        mostrarVerificacao(user, false);
+      }
+      return;
+    }
     liberarPainel(user);
   });
 }
