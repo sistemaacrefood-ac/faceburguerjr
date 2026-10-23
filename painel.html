@@ -290,6 +290,8 @@
   }
   .lock-btn:hover{ background:rgba(40,40,44,.85); border-color:rgba(255,255,255,.5); }
   .lock-btn:active{ transform:scale(.97); }
+  .lock-btn-google{ margin-top:10px; font-size:.95rem; background:#fff; color:#222; border-color:#fff; }
+  .lock-btn-google:hover{ background:#f1f1f1; border-color:#fff; }
   .lock-extra{
     display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
     margin-top:16px; font-size:.85rem; color:#fff;
@@ -626,6 +628,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10V7A5 5 0 0 0 7 7v3H5v12h14V10h-2zM9 7a3 3 0 0 1 6 0v3H9V7zm4 9.7V19h-2v-2.3a2 2 0 1 1 2 0z"/></svg>
       </div>
       <button class="lock-btn" id="lock-btn-principal" onclick="acaoPrincipalLock()">LOGIN</button>
+      <button class="lock-btn lock-btn-google" type="button" onclick="entrarComGoogle()">ENTRAR COM GOOGLE</button>
       <div class="lock-extra" id="lock-extra-login">
         <label class="lock-remember"><input type="checkbox" id="lock-lembrar" checked> Lembrar de mim</label>
         <button class="link-btn" onclick="esqueciSenha()">Esqueci minha senha?</button>
@@ -1252,6 +1255,25 @@ function definirModoLock(modo){
 function alternarModoLock(){
   document.getElementById("lock-senha2").value = "";
   definirModoLock(modoLock === "cadastro" ? "login" : "cadastro");
+}
+/* ---------- Entrar com Google: e-mail do Google já vem confirmado ---------- */
+function entrarComGoogle(){
+  if(!firebaseAppPronto){ lockErro(mensagemFirebaseIndisponivel()); return; }
+  lockErro("Abrindo o Google…", true);
+  const provedor = new firebase.auth.GoogleAuthProvider();
+  provedor.setCustomParameters({ prompt: "select_account" });
+  firebase.auth().setPersistence(persistenciaEscolhida())
+    .then(() => firebase.auth().signInWithPopup(provedor))
+    .catch(err => {
+      console.error(err);
+      const c = err && err.code;
+      if(c === "auth/popup-closed-by-user" || c === "auth/cancelled-popup-request"){ lockErro(""); return; }
+      if(c === "auth/popup-blocked"){ lockErro("O navegador bloqueou a janela do Google. Libere pop-ups para este site e tente de novo."); return; }
+      if(c === "auth/operation-not-allowed"){ lockErro("O login com Google ainda não está ativado no Firebase."); return; }
+      if(c === "auth/unauthorized-domain"){ lockErro("Este site ainda não está autorizado no Firebase (Authentication > Configurações > Domínios autorizados)."); return; }
+      lockErro(mensagemErroAuth(err));
+    });
+  // O onAuthStateChanged lá embaixo libera o painel depois do login.
 }
 function acaoPrincipalLock(){
   if(modoLock === "cadastro") criarContaDono();
