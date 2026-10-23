@@ -697,10 +697,6 @@
       <div class="pd-stat"><div class="ico">🛵</div><div><div class="lbl">Saíram</div><div class="num" id="st-saiu">0</div><div class="sub">entregas e retiradas</div></div></div>
     </div>
     <div class="toolbar">
-      <label class="switch">
-        <input type="checkbox" id="auto-print-toggle" checked onchange="salvarPrefAutoPrint()">
-        <span>Imprimir sozinho ao aceitar o pedido</span>
-      </label>
       <label class="switch" title="Toca a campainha sem parar enquanto houver pedido novo esperando ser aceito.">
         <input type="checkbox" id="som-toggle" checked onchange="salvarPrefSom()">
         <span>Som de pedido novo</span>
@@ -762,7 +758,7 @@ Endereço: Rua X, 123"></textarea>
             2. No topo desta página, escolha a largura da bobina: <b>58mm</b> ou <b>80mm</b>.<br>
             3. Para imprimir <b>sem aparecer a janela de impressão</b>: clique com o botão direito no atalho do Chrome → Propriedades → no campo "Destino", depois das aspas, acrescente um espaço e <b>--kiosk-printing</b>. Feche todas as janelas do Chrome e abra o painel por esse atalho.<br>
             4. Clique em "Imprimir cupom de teste" para conferir.<br>
-            5. Quando chegar um pedido, a campainha toca até alguém clicar em <b>Aceitar pedido</b> — e o cupom sai sozinho na hora. Não precisa mais de QZ Tray.
+            5. Quando chegar um pedido, a campainha toca até alguém clicar em <b>Aceitar e imprimir</b> — e o cupom sai sozinho na hora. Não precisa mais de QZ Tray.
           </div>
         </details>
       </div>
@@ -1786,7 +1782,8 @@ function imprimirViaNavegador(htmlCupom){
     const p = PAPEIS[larguraPapel];
     const frame = document.createElement("iframe");
     frame.setAttribute("aria-hidden", "true");
-    frame.style.cssText = "position:fixed;left:-9999px;top:0;width:" + p.folha + "mm;height:10px;border:0;";
+    // Dentro da tela, com tamanho real e invisível: iframe minúsculo fora da tela pode imprimir em branco.
+    frame.style.cssText = "position:fixed;left:0;top:0;width:" + p.folha + "mm;height:200mm;border:0;opacity:0;pointer-events:none;z-index:-1;";
     let terminou = false;
     const fim = ok => {
       if(terminou) return;
@@ -1797,25 +1794,50 @@ function imprimirViaNavegador(htmlCupom){
     frame.onload = () => {
       try{
         const win = frame.contentWindow, doc = win.document;
-        // Página do tamanho exato do cupom: não desperdiça bobina.
-        const pxPorMm = 96 / 25.4;
-        const alturaMm = Math.max(40, Math.ceil(doc.body.scrollHeight / pxPorMm) + 6);
         const estilo = doc.createElement("style");
         // Tamanho da pagina fica por conta do driver: tamanho personalizado fazia a termica recusar a impressao.
-          estilo.textContent = `@page{ size:auto; margin:0; }`;
+        estilo.textContent = `@page{ size:auto; margin:0; }`;
         doc.head.appendChild(estilo);
         win.addEventListener("afterprint", () => fim(true));
-        win.focus();
-        win.print();
-        // Em navegadores onde o print() não espera, garante que a fila anda.
-        setTimeout(() => fim(true), 60000);
+        // Pequena espera pro cupom terminar de desenhar antes de imprimir.
+        setTimeout(() => {
+          try{
+            win.focus();
+            win.print();
+          }catch(e){
+            console.error("Erro ao imprimir pelo iframe, tentando janela:", e);
+            imprimirViaJanela(htmlCupom).then(fim);
+            return;
+          }
+          // Em navegadores onde o print() não espera, garante que a fila anda.
+          setTimeout(() => fim(true), 15000);
+        }, 300);
       }catch(e){
         console.error("Erro ao imprimir:", e);
-        fim(false);
+        imprimirViaJanela(htmlCupom).then(fim);
       }
     };
     frame.srcdoc = paginaDoCupom(htmlCupom);
     document.body.appendChild(frame);
+  });
+}
+
+/* Plano B: abre o cupom numa janelinha e imprime por ela. */
+function imprimirViaJanela(htmlCupom){
+  return new Promise(resolve => {
+    const w = window.open("", "_blank", "width=420,height=600");
+    if(!w){
+      showToast("O navegador bloqueou a janela de impressão. Libere pop-ups para este site.");
+      resolve(false);
+      return;
+    }
+    w.document.open();
+    w.document.write(paginaDoCupom(htmlCupom));
+    w.document.close();
+    setTimeout(() => {
+      try{ w.focus(); w.print(); }catch(e){ console.error(e); resolve(false); return; }
+      setTimeout(() => { try{ w.close(); }catch(e){} resolve(true); }, 500);
+    }, 300);
   });
 }
 
@@ -1853,13 +1875,9 @@ function quebrarLinha(texto, largura = 32){
    FIRESTORE — recebe os pedidos do cardápio em tempo real
    ====================================================== */
 let firestoreDB = null;
-let autoPrintLigado = localStorage.getItem("painel-auto-print") !== "0";
-document.getElementById("auto-print-toggle").checked = autoPrintLigado;
-
-function salvarPrefAutoPrint(){
-  autoPrintLigado = document.getElementById("auto-print-toggle").checked;
-  localStorage.setItem("painel-auto-print", autoPrintLigado ? "1" : "0");
-}
+// Aceitar o pedido SEMPRE manda o cupom pra impressora.
+const autoPrintLigado = true;
+try{ localStorage.removeItem("painel-auto-print"); }catch(e){}
 
 function setFsStatus(ok, texto){
   const el = document.getElementById("fs-status");
@@ -2117,14 +2135,15 @@ function imprimirPedidoAutomatico(id, pedido){
 }
 
 /* Aceitar = muda o status, para a campainha e já manda o cupom pra
-   impressora (se "Imprimir sozinho ao aceitar" estiver ligado). */
+   impressora na hora. */
 function aceitarPedido(id){
   const pedido = pedidosNaTela.get(id);
   atualizarStatusPedido(id, "confirmado");
   if(pedido){
     pedido.status = "confirmado";   // para a campainha na hora, sem esperar o servidor
     atualizarCampainha();
-    if(autoPrintLigado && pedido.printStatus !== "impresso") imprimirPedidoAutomatico(id, pedido);
+    try{ imprimirPedidoAutomatico(id, pedido); }
+    catch(e){ console.error("Erro ao imprimir ao aceitar:", e); showToast('Não consegui imprimir. Clique em "Reimprimir".'); }
   }
 }
 
