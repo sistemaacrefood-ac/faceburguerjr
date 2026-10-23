@@ -1571,8 +1571,9 @@ const CONFIG = {
   endereco: "Rua do Tucumã, 464 — Mocinha Magalhães, Rio Branco – AC",
   whatsapp: "5568992238447",       // formato: 55 + DDD + número, só números
   whatsappDisplay: "(68) 99223-8447 / (68) 99922-1546",
-  pixChave: "", // deixe vazio até ter a chave: o cliente é orientado a pedir pelo WhatsApp // chave Pix (telefone)
-  pixNome: "",
+  pixChave: "68992238447", // chave Pix (telefone). Se deixar vazio, o cliente é orientado a pedir pelo WhatsApp
+  pixNome: "Afonso Rodrigues Barros Júnior",
+  pixBanco: "Mercado Pago",
   taxaEntrega: 2.00, // taxa padrão, usada quando não dá pra calcular pela localização do cliente
   // Coordenadas da loja (ponto de partida pro cálculo da taxa por distância).
   lojaLat: -9.9440907, // Rua do Tucumã (CEP 69920-046) — aproximado; ajuste pro ponto exato se quiser
@@ -3005,9 +3006,10 @@ function goToCheckout(){
       </div>
       <div class="pix-info show" id="pix-info">
         ${CONFIG.pixChave ? `Chave Pix: <span class="pix-key">${CONFIG.pixChave}</span><br>
-        Titular: ${CONFIG.pixNome}<br>` : `A chave Pix é enviada pelo WhatsApp junto com a confirmação do pedido.<br>`}
+        Titular: ${CONFIG.pixNome}<br>
+        ${CONFIG.pixBanco ? `Banco: ${CONFIG.pixBanco}<br>` : ``}` : `A chave Pix é enviada pelo WhatsApp junto com a confirmação do pedido.<br>`}
         Envie o comprovante junto com o pedido no WhatsApp.
-        ${CONFIG.pixChave ? `<button type="button" class="copy-pix-btn" onclick="copiarDadosPix()">📋 Copiar dados do Pix</button>` : ``}
+        ${CONFIG.pixChave ? `<button type="button" class="copy-pix-btn" onclick="copiarDadosPix()">📋 Copiar chave Pix</button>` : ``}
       </div>
       <div class="pix-info" id="cartao-info">
         Levamos a maquininha na entrega.
@@ -4375,8 +4377,9 @@ function copyOrderMessage(){
 /* Copia a chave Pix + nome do titular, pro cliente colar no app do banco
    caso prefira fazer o Pix por lá em vez de digitar na mão. */
 function copiarDadosPix(){
-  const texto = `Chave Pix: ${CONFIG.pixChave}\nTitular: ${CONFIG.pixNome}`;
-  const finish = () => showToast("Dados do Pix copiados!");
+  // copia só a chave, pra colar direto no campo "chave Pix" do app do banco
+  const texto = CONFIG.pixChave;
+  const finish = () => showToast("Chave Pix copiada! Cole no app do seu banco.");
 
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(texto).then(finish).catch(() => fallbackCopy(texto, finish));
